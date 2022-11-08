@@ -110,8 +110,7 @@ if __name__ == '__main__':
 
     correct_best_all = []
     correct_last_all = []
-    for i in range(1): # len(domain_list)
-        i = 2
+    for i in range(len(domain_list)):
         torch.cuda.empty_cache()
         target_list = [domain_list[i]]
         source_list = [x for x in domain_list if x not in target_list]
