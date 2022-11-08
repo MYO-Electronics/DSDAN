@@ -8,6 +8,7 @@ import time
 import random
 from tqdm import tqdm
 import matplotlib.pyplot as plt
+from torch.utils.data import DataLoader, TensorDataset
 
 import data_loader
 import ResNet as models
@@ -15,7 +16,7 @@ from Config import *
 from ranger21 import Ranger21
 from lmmd_loss import lmmd
 
-os.environ["CUDA_VISIBLE_DEVICES"] = cuda_ids
+os.environ["CUDA_VISIBLE_DEVICES"] = "1"  # cuda_ids
 torch.autograd.set_detect_anomaly(True)
 
 
@@ -108,10 +109,8 @@ if __name__ == '__main__':
     print(domain_list)
     set_random_seed(seed)
 
-    correct_best_all = []
-    correct_last_all = []
     for i in range(1): # len(domain_list)
-        i = 2
+        i = 0
         torch.cuda.empty_cache()
         target_list = [domain_list[i]]
         source_list = [x for x in domain_list if x not in target_list]
@@ -146,38 +145,40 @@ if __name__ == '__main__':
                              use_warmup=True,
                              warmdown_active=False,
                              )
-        for epoch in tqdm(range(epochs), desc='adaptation Epoch'):
-            adaptation_start = time.time()
-            loss_train1, loss_train2 = train(model, optimizer, source_loader, target_train_loader)
-            print('\nloss train1 ；', loss_train1 / len_source_dataset)
-            print('loss train2 ；', loss_train2 / len_source_dataset)
-            # PATH1 = './model/' + target_list[0] + '_adaptation.pkl'
-            # model.load_state_dict(torch.load(PATH), strict=False)
+
+        target_datas, target_labels = data_loader.load_data_numpy(root_path, target_list, interpshape, dataset)
+
+        blocks = 30 # len(target_train_loader)-1
+        for block in tqdm(range(blocks)):
+            # get the acquired target data from target domain
+            target_set = TensorDataset(
+                torch.tensor(target_datas[0:(batch_size * block + batch_size)], dtype=torch.float),
+                torch.tensor(target_labels[0:(batch_size * block + batch_size)], dtype=torch.float))
+            target_train_loader1 = DataLoader(dataset=target_set, batch_size=batch_size, shuffle=True, drop_last=False,
+                                              **kwargs)
+            # get the lastest block of target data
+            # lastest_block_data = torch.tensor(target_datas[(batch_size * block):(batch_size * block + batch_size)],
+            #                                   dtype=torch.float)
+            # lastest_block_label = torch.tensor(target_labels[(batch_size * block):(batch_size * block + batch_size)],
+            #                                    dtype=torch.float)
+
+            # adapt the model with acquired target data and source data
+            for epoch in range(1):
+                loss_train1, loss_train2 = train(model, optimizer, source_loader, target_train_loader1)
+
+            # test the whole target domain after adapting blocks of target datas
             test_correct, test_loss = test(model, target_train_loader)
             accuracy_tea.append(test_correct / len_target_dataset)
 
-            print('loss true: ', test_loss / len_target_dataset)
-            print('epoch:{}, {} correct : {}/{}  ave_correct_rate : {}'.format(epoch + 1, target_list, test_correct,
-                                                                               len_target_dataset, accuracy_tea[-1]))
-            print('Adaptation cost time (s/epoch):', time.time() - adaptation_start)
+            print('\nloss true: ', test_loss / len_target_dataset)
+            print('Acc for all, {} correct : {}/{}  ave_correct_rate : {}'.format(target_list, test_correct,
+                                                                                  len_target_dataset, accuracy_tea[-1]))
 
-        correct_best_all.append(max(accuracy_tea))
-        correct_last_all.append(accuracy_tea[-1])
         print('cost time:', time.time() - time_start)
-
-        print('epoch {} has the max average acc_rate {}'.format(np.argmax(np.array(accuracy_tea)) + 1, max(accuracy_tea)))
-        print('correct_best : ', max(accuracy_tea))
-        print('correct_last : ', accuracy_tea[-1])
-        
-        np.save('./MPR_test_{}.npy'.format(target_list[0]), np.array(accuracy_tea))
-        plt.plot(range(epochs), [100*x for x in accuracy_tea])
-        plt.xlabel('Epochs')
-        plt.ylabel('Accuracy (%)')
-        plt.title('MPR test for {}'.format(target_list[0]))
-        plt.savefig('./MPR_test_for_{}.png'.format(target_list[0]))
+        np.save('./online_test_{}.npy'.format(target_list[0]), np.array(accuracy_tea))
+        plt.plot(range(blocks), [100*x for x in accuracy_tea])
+        plt.xlabel('Blocks')
+        plt.ylabel('accuracy (%)')
+        plt.title('online test for {}'.format(target_list[0]))
+        plt.savefig('./online_test_for_{}.png'.format(target_list[0]))
         print('process for {} finished!'.format(target_list))
-
-    print('correct_best_all : ', correct_best_all)
-    print('best mean : ', np.mean(np.array(correct_best_all)))
-    print('correct_last_all : ', correct_last_all)
-    print('last mean : ', np.mean(np.array(correct_last_all)))

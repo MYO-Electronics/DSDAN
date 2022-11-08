@@ -46,3 +46,16 @@ def load_data(rootdir, subject_list, batch_size, kwargs, interpshape=10, datanam
     source_loader = DataLoader(dataset=sources_set, batch_size=batch_size, shuffle=shuffle, drop_last=drop_last, **kwargs)
 
     return source_loader
+
+
+def load_data_numpy(rootdir, subject_list, interpshape=10, dataname=dataset):
+    sources = np.empty(shape=(0, 3, interpshape, interpshape))
+    sources_label = []
+    for i, sub in enumerate(subject_list):
+        source, source_label = get_numpy(rootdir, sub, dataname)
+        if interpshape != 10:
+            source = interpolation(source, interpshape)
+        sources = np.concatenate((sources, source), axis=0)
+        sources_label = np.concatenate((sources_label, source_label), axis=0)
+
+    return sources, sources_label
