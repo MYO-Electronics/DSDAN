@@ -4,7 +4,8 @@ Please refer to “<https://github.com/MYO-Electronics/DSDAN>” for the source 
 ### **Abstract**
 <div align='left'>
 <img src='./results/flowchart.png'/>
-</div>
+</div>  
+
 **Objective:** The objective of this work is to develop a robust method for myoelectric control to tackle the performance degradation caused by user variance in cross-user scenarios. 
 
 **Methods:** In the proposed method, a preprocessing approach was first performed to convert surface electromyogram (sEMG) signals into a series of feature images. Then, the testing images were input to a teacher-student model along with training images. A bidirectional knowledge distillation technique was subsequently adopted to facilitate mutual learning between teacher network and student network to address the problem of balancing adaptation speed and accuracy in the unsupervised domain adaptation (UDA). Specially, a novel dual-step domain adaptation updating strategy was utilized to mitigate knowledge obsolescence and error accumulation problems in knowledge distillation. We evaluated the performance of our proposed framework on both high-density and low-density sEMG datasets.
