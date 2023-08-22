@@ -80,7 +80,7 @@ def train(model, optimizer, source_loader, target_loader):
     return loss_train1, loss_train2
 
 
-def test(model, target_loader):
+def tst(model, target_loader):
     model.eval()
     test_loss_true = 0
     correct_tea = 0
@@ -117,10 +117,12 @@ if __name__ == '__main__':
         print('source: {}, target:{}'.format(source_list, target_list))
         target_train_loader = data_loader.load_data(root_path, target_list, batch_size, kwargs, interpshape,
                                                     dataname=dataset, shuffle=True, drop_last=False)
+        target_test_loader = data_loader.load_data(root_path, target_list, batch_size, kwargs, interpshape,
+                                                    dataname=dataset, shuffle=True, drop_last=False)
         source_loader = data_loader.load_data(root_path, source_list, batch_size, kwargs, interpshape,
                                                     dataname=dataset, shuffle=True, drop_last=True)
 
-        len_target_dataset = len(target_train_loader.dataset)
+        len_target_dataset = len(target_test_loader.dataset)
         len_source_dataset = len(source_loader.dataset)
         print('Data loading....')
         print('Loaded len_target_dataset : ', len_target_dataset)
@@ -152,7 +154,7 @@ if __name__ == '__main__':
             print('loss train2 ；', loss_train2 / len_source_dataset)
             # PATH1 = './model/' + target_list[0] + '_adaptation.pkl'
             # model.load_state_dict(torch.load(PATH), strict=False)
-            test_correct, test_loss = test(model, target_train_loader)
+            test_correct, test_loss = tst(model, target_test_loader)
             accuracy_tea.append(test_correct / len_target_dataset)
 
             print('loss true: ', test_loss / len_target_dataset)
