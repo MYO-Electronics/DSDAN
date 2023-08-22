@@ -81,7 +81,7 @@ def train(model, optimizer, source_loader, target_loader):
     return loss_train1, loss_train2
 
 
-def test(model, target_loader):
+def tst(model, target_loader):
     model.eval()
     test_loss_true = 0
     correct_tea = 0
@@ -147,7 +147,7 @@ if __name__ == '__main__':
 
         target_datas, target_labels = data_loader.load_data_numpy(root_path, target_list, interpshape, dataset)
 
-        blocks = 30 # len(target_train_loader)-1
+        blocks = 30  # len(target_train_loader)-1
         for block in tqdm(range(blocks)):
             # get the acquired target data from target domain
             target_set = TensorDataset(
@@ -155,23 +155,26 @@ if __name__ == '__main__':
                 torch.tensor(target_labels[0:(batch_size * block + batch_size)], dtype=torch.float))
             target_train_loader1 = DataLoader(dataset=target_set, batch_size=batch_size, shuffle=True, drop_last=False,
                                               **kwargs)
+
             # get the lastest block of target data
-            # lastest_block_data = torch.tensor(target_datas[(batch_size * block):(batch_size * block + batch_size)],
-            #                                   dtype=torch.float)
-            # lastest_block_label = torch.tensor(target_labels[(batch_size * block):(batch_size * block + batch_size)],
-            #                                    dtype=torch.float)
+            lastest_block_data = torch.tensor(target_datas[(batch_size * block):(batch_size * block + batch_size)],
+                                              dtype=torch.float)
+            lastest_block_label = torch.tensor(target_labels[(batch_size * block):(batch_size * block + batch_size)],
+                                               dtype=torch.float)
+            target_test_set = TensorDataset(lastest_block_data, lastest_block_label)
+            target_test_loader = DataLoader(dataset=target_test_set, batch_size=batch_size, shuffle=True, drop_last=False,
+                                              **kwargs)
+
+            # test the lastest block data after adapting blocks of acquired target datas
+            test_correct, test_loss = tst(model, target_test_loader)
+            accuracy_tea.append(test_correct / batch_size)
+            print('\nloss true: ', test_loss / len_target_dataset)
+            print('Acc for next block, {} correct : {}/{}  ave_correct_rate : {}'.format(target_list, test_correct,
+                                                                                  batch_size, accuracy_tea[-1]))
 
             # adapt the model with acquired target data and source data
             for epoch in range(1):
                 loss_train1, loss_train2 = train(model, optimizer, source_loader, target_train_loader1)
-
-            # test the whole target domain after adapting blocks of target datas
-            test_correct, test_loss = test(model, target_train_loader)
-            accuracy_tea.append(test_correct / len_target_dataset)
-
-            print('\nloss true: ', test_loss / len_target_dataset)
-            print('Acc for all, {} correct : {}/{}  ave_correct_rate : {}'.format(target_list, test_correct,
-                                                                                  len_target_dataset, accuracy_tea[-1]))
 
         print('cost time:', time.time() - time_start)
         np.save('./online_test_{}.npy'.format(target_list[0]), np.array(accuracy_tea))
