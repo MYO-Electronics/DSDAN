@@ -3,7 +3,7 @@
 Please refer to “<https://github.com/MYO-Electronics/DSDAN>” for the source code.
 ### **Abstract**
 <div align='left'>
-<img src='./results/FINAL_VERSION_graphical_abstract.tif'/>
+<img src='./results/FINAL_VERSION_graphical_abstract.png'/>
 </div>  
 
 **Objective:** The objective of this work is to develop a robust method for myoelectric control to tackle the performance degradation caused by user variance in cross-user scenarios. 
